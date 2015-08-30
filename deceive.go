@@ -5,55 +5,50 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"path"
 )
 
-func main() {
-	host := flag.String("host", "localhost", "host to serve on")
-	port := flag.Int("port", 1984, "port to serve on")
-	cert := flag.String("cert", "", "server cert to use")
-	key := flag.String("key", "", "server key to use")
-	ca := flag.String("ca", "", "ca cert to use")
-	root := flag.String("root", "", "root to write to")
+type Config struct {
+	Host   string
+	Port   int
+	Cert   string
+	Key    string
+	CaCert string
+}
+
+func GetConfig() Config {
+	config := Config{
+		Host:   "localhost",
+		Port:   1984,
+		Cert:   "",
+		Key:    "",
+		CaCert: "",
+	}
+
+	host := flag.String("host", config.Host, "host to serve on")
+	port := flag.Int("port", config.Port, "port to serve on")
+	cert := flag.String("cert", config.Cert, "server cert to use")
+	key := flag.String("key", config.Key, "server key to use")
+	ca := flag.String("ca", config.CaCert, "ca cert to use")
 
 	flag.Parse()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		clientName := r.TLS.PeerCertificates[0].Subject.CommonName
+	config.Host = *host
+	config.Port = *port
+	config.Cert = *cert
+	config.Key = *key
+	config.CaCert = *ca
 
-		dir, fpath := path.Split(r.URL.Path)
-		dir = path.Clean(path.Join("/", dir))
-		targetDir := path.Join(*root, dir)
+	return config
+}
 
-		if _, err := os.Stat(targetDir); os.IsNotExist(err) {
-			log.Printf("Unknown directory\n")
-			return
-		}
-
-		targetFile := path.Join(targetDir, fpath)
-
-		fd, err := os.Create(targetFile)
-		if err != nil {
-			log.Printf("Error: %s\n", err)
-			return
-		}
-		defer fd.Close()
-
-		written, err := io.Copy(fd, r.Body)
-		if err != nil {
-			log.Printf("Error: %s\n", err)
-			return
-		}
-		log.Printf("%s written %d bytes, %s\n", clientName, written, targetFile)
-	})
+func main() {
+	config := GetConfig()
 
 	caPool := x509.NewCertPool()
-	x509CaCrt, err := ioutil.ReadFile(*ca)
+	x509CaCrt, err := ioutil.ReadFile(config.CaCert)
 	if err != nil {
 		panic(err)
 	}
@@ -61,15 +56,16 @@ func main() {
 		panic(fmt.Errorf("Error appending CA cert from PEM!"))
 	}
 
-	log.Printf("Listening...\n")
-
 	s := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", *host, *port),
+		Addr:    fmt.Sprintf("%s:%d", config.Host, config.Port),
 		Handler: http.DefaultServeMux,
 		TLSConfig: &tls.Config{
 			ClientAuth: tls.RequireAndVerifyClientCert,
 			ClientCAs:  caPool,
 		},
 	}
-	log.Fatal(s.ListenAndServeTLS(*cert, *key))
+
+	http.HandleFunc("/", HandleUpload)
+	log.Printf("Listening...\n")
+	log.Fatal(s.ListenAndServeTLS(config.Cert, config.Key))
 }
