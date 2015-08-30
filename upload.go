@@ -11,7 +11,7 @@ import (
 func HandleUpload(config Config, w http.ResponseWriter, r *http.Request, clientName string) {
 	dir, fpath := path.Split(r.URL.Path)
 	dir = path.Clean(path.Join("/", dir))
-	targetDir := path.Join("/tmp/fnord/", dir)
+	targetDir := path.Join(config.Root, dir)
 
 	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
 		log.Printf("Unknown directory\n")

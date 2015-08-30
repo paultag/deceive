@@ -73,6 +73,7 @@ func main() {
 		clientName := r.TLS.PeerCertificates[0].Subject.CommonName
 		HandleUpload(config, w, r, clientName)
 	})
+
 	log.Printf("Listening...\n")
 	log.Fatal(s.ListenAndServeTLS(config.Cert, config.Key))
 }
