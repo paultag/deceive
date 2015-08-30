@@ -8,9 +8,7 @@ import (
 	"path"
 )
 
-func HandleUpload(w http.ResponseWriter, r *http.Request) {
-	clientName := r.TLS.PeerCertificates[0].Subject.CommonName
-
+func HandleUpload(config Config, w http.ResponseWriter, r *http.Request, clientName string) {
 	dir, fpath := path.Split(r.URL.Path)
 	dir = path.Clean(path.Join("/", dir))
 	targetDir := path.Join("/tmp/fnord/", dir)
