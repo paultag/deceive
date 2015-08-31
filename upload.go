@@ -75,7 +75,7 @@ func HandlePUT(config Config, w http.ResponseWriter, r *http.Request, clientName
 	}
 	l("Wrote %d bytes.", written)
 	writeSuccess(w, map[string]string{
-		"message": "",
+		"message": fmt.Sprintf("Wrote %d bytes", written),
 	}, 200)
 }
 
