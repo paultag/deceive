@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path"
 )
 
 type Config struct {
@@ -44,6 +46,13 @@ func GetConfig() Config {
 	config.Key = *key
 	config.CaCert = *ca
 	config.Root = *root
+	if !path.IsAbs(config.Root) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
+		config.Root = path.Clean(path.Join(cwd, config.Root))
+	}
 
 	return config
 }

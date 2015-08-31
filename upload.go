@@ -8,7 +8,7 @@ import (
 	"path"
 )
 
-func HandleUpload(config Config, w http.ResponseWriter, r *http.Request, clientName string) {
+func HandlePUT(config Config, w http.ResponseWriter, r *http.Request, clientName string) {
 	dir, fpath := path.Split(r.URL.Path)
 	dir = path.Clean(path.Join("/", dir))
 	targetDir := path.Join(config.Root, dir)
@@ -33,4 +33,18 @@ func HandleUpload(config Config, w http.ResponseWriter, r *http.Request, clientN
 		return
 	}
 	log.Printf("%s written %d bytes, %s\n", clientName, written, targetFile)
+}
+
+func HandleGET(config Config, w http.ResponseWriter, r *http.Request, clientName string) {
+}
+
+func HandleUpload(config Config, w http.ResponseWriter, r *http.Request, clientName string) {
+	switch r.Method {
+	case "PUT":
+		HandlePUT(config, w, r, clientName)
+	case "GET":
+		HandleGET(config, w, r, clientName)
+	default:
+		log.Printf("Unknown method\n")
+	}
 }
