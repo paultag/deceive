@@ -18,7 +18,8 @@ func HandlePUT(config Config, w http.ResponseWriter, r *http.Request, clientName
 		return
 	}
 
-	targetFile := path.Join(targetDir, fpath)
+	targetFile := path.Clean(path.Join(targetDir, fpath))
+	/* Verify that targetFile starts with config.Root */
 
 	fd, err := os.Create(targetFile)
 	if err != nil {
