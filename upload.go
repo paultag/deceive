@@ -110,7 +110,7 @@ func HandleGET(
 ) {
 	defer log("End request")
 	log("GET request to: %s", r.URL.Path)
-	writeError(w, "GET not supported", 400)
+	writeError(w, "GET not supported yet.", 400)
 	return
 }
 
@@ -128,6 +128,7 @@ func HandleUpload(
 		HandleGET(log, config, w, r, clientName)
 	default:
 		log("Unknown method\n")
+		writeError(w, "Method not supported", 400)
 	}
 }
 
