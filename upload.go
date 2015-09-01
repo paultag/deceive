@@ -31,7 +31,7 @@ func writeJSON(w http.ResponseWriter, data interface{}, code int) error {
 	return nil
 }
 
-func HandlePUT(config Config, w http.ResponseWriter, r *http.Request, clientName string) {
+func HandlePUT(config Deceive, w http.ResponseWriter, r *http.Request, clientName string) {
 	l := func(message string, args ...interface{}) {
 		log.Printf("%s: %s", clientName, fmt.Sprintf(message, args...))
 	}
@@ -79,10 +79,10 @@ func HandlePUT(config Config, w http.ResponseWriter, r *http.Request, clientName
 	}, 200)
 }
 
-func HandleGET(config Config, w http.ResponseWriter, r *http.Request, clientName string) {
+func HandleGET(config Deceive, w http.ResponseWriter, r *http.Request, clientName string) {
 }
 
-func HandleUpload(config Config, w http.ResponseWriter, r *http.Request, clientName string) {
+func HandleUpload(config Deceive, w http.ResponseWriter, r *http.Request, clientName string) {
 	switch r.Method {
 	case "PUT":
 		HandlePUT(config, w, r, clientName)

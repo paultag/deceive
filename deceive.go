@@ -3,26 +3,27 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path"
+
+	"pault.ag/go/config"
 )
 
-type Config struct {
-	Host   string
-	Port   int
-	Cert   string
-	Key    string
-	CaCert string
-	Root   string
+type Deceive struct {
+	Host   string `flag:"host" description:"host to serve on behalf on"`
+	Port   int    `flag:"port" description:"server port to host on"`
+	Cert   string `flag:"cert" description:"server tls cert"`
+	Key    string `flag:"key" description:"server tls key"`
+	CaCert string `flag:"ca" description:"ca cert"`
+	Root   string `flag:"root" description:"filesystem root"`
 }
 
-func GetConfig() Config {
-	config := Config{
+func GetConfig() Deceive {
+	conf := Deceive{
 		Host:   "localhost",
 		Port:   1984,
 		Cert:   "/etc/deceive/deceive.crt",
@@ -30,38 +31,28 @@ func GetConfig() Config {
 		CaCert: "/etc/deceive/ca.crt",
 		Root:   "/var/lib/deceive/",
 	}
+	flags, err := config.LoadFlags("deceive", &conf)
+	if err != nil {
+		panic(err)
+	}
+	flags.Parse(os.Args[1:])
 
-	host := flag.String("host", config.Host, "host to serve on")
-	port := flag.Int("port", config.Port, "port to serve on")
-	cert := flag.String("cert", config.Cert, "server cert to use")
-	key := flag.String("key", config.Key, "server key to use")
-	ca := flag.String("ca", config.CaCert, "ca cert to use")
-	root := flag.String("root", config.Root, "filesystem root")
-
-	flag.Parse()
-
-	config.Host = *host
-	config.Port = *port
-	config.Cert = *cert
-	config.Key = *key
-	config.CaCert = *ca
-	config.Root = *root
-	if !path.IsAbs(config.Root) {
+	if !path.IsAbs(conf.Root) {
 		cwd, err := os.Getwd()
 		if err != nil {
 			panic(err)
 		}
-		config.Root = path.Clean(path.Join(cwd, config.Root))
+		conf.Root = path.Clean(path.Join(cwd, conf.Root))
 	}
 
-	return config
+	return conf
 }
 
 func main() {
-	config := GetConfig()
+	conf := GetConfig()
 
 	caPool := x509.NewCertPool()
-	x509CaCrt, err := ioutil.ReadFile(config.CaCert)
+	x509CaCrt, err := ioutil.ReadFile(conf.CaCert)
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +61,7 @@ func main() {
 	}
 
 	s := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", config.Host, config.Port),
+		Addr:    fmt.Sprintf("%s:%d", conf.Host, conf.Port),
 		Handler: http.DefaultServeMux,
 		TLSConfig: &tls.Config{
 			ClientAuth: tls.RequireAndVerifyClientCert,
@@ -80,9 +71,9 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		clientName := r.TLS.PeerCertificates[0].Subject.CommonName
-		HandleUpload(config, w, r, clientName)
+		HandleUpload(conf, w, r, clientName)
 	})
 
 	log.Printf("Listening...\n")
-	log.Fatal(s.ListenAndServeTLS(config.Cert, config.Key))
+	log.Fatal(s.ListenAndServeTLS(conf.Cert, conf.Key))
 }
