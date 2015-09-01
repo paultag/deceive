@@ -91,7 +91,10 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		clientName := r.TLS.PeerCertificates[0].Subject.CommonName
-		HandleUpload(conf, w, r, clientName)
+		l := func(message string, args ...interface{}) {
+			log.Printf("%s: %s", clientName, fmt.Sprintf(message, args...))
+		}
+		HandleUpload(l, conf, w, r, clientName)
 	})
 
 	log.Printf("Listening...\n")

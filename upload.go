@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -51,26 +50,29 @@ func writeJSON(w http.ResponseWriter, data interface{}, code int) error {
 	return nil
 }
 
-func HandlePUT(config Deceive, w http.ResponseWriter, r *http.Request, clientName string) {
-	l := func(message string, args ...interface{}) {
-		log.Printf("%s: %s", clientName, fmt.Sprintf(message, args...))
-	}
-	defer l("End request")
+func HandlePUT(
+	log func(string, ...interface{}),
+	config Deceive,
+	w http.ResponseWriter,
+	r *http.Request,
+	clientName string,
+) {
+	defer log("End request")
 
-	l("Incoming request to push to %s", r.URL.Path)
+	log("Incoming request to push to %s", r.URL.Path)
 	dir, fpath := path.Split(r.URL.Path)
 	dir = path.Clean(path.Join("/", dir))
 	targetDir := path.Join(config.Root, dir)
 
 	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
-		l("Attempting to write to an unknown directory")
+		log("Attempting to write to an unknown directory")
 		writeError(w, "unknown archive", 400)
 		return
 	}
 
 	targetFile := path.Clean(path.Join(targetDir, fpath))
 	if !strings.HasPrefix(targetFile, config.Root) {
-		l(
+		log(
 			"Caught an attempt to write outside the root! Whoah! %s",
 			targetFile, config.Root,
 		)
@@ -80,36 +82,52 @@ func HandlePUT(config Deceive, w http.ResponseWriter, r *http.Request, clientNam
 
 	fd, err := os.Create(targetFile)
 	if err != nil {
-		l("Error creating target: %s: %s", targetFile, err)
+		log("Error creating target: %s: %s", targetFile, err)
 		writeError(w, "error creating target!", 500)
 		return
 	}
 	defer fd.Close()
 
-	l("Starting write to target filename")
+	log("Starting write to target filename")
 	written, err := io.Copy(fd, r.Body)
 	if err != nil {
-		l("Error writing to target: %s: %s", targetFile, err)
+		log("Error writing to target: %s: %s", targetFile, err)
 		writeError(w, "error writing to target!", 500)
 		return
 	}
-	l("Wrote %d bytes.", written)
+	log("Wrote %d bytes.", written)
 	writeSuccess(w, map[string]string{
 		"message": fmt.Sprintf("Wrote %d bytes", written),
 	}, 200)
 }
 
-func HandleGET(config Deceive, w http.ResponseWriter, r *http.Request, clientName string) {
+func HandleGET(
+	log func(string, ...interface{}),
+	config Deceive,
+	w http.ResponseWriter,
+	r *http.Request,
+	clientName string,
+) {
+	defer log("End request")
+	log("GET request to: %s", r.URL.Path)
+	writeError(w, "GET not supported", 400)
+	return
 }
 
-func HandleUpload(config Deceive, w http.ResponseWriter, r *http.Request, clientName string) {
+func HandleUpload(
+	log func(string, ...interface{}),
+	config Deceive,
+	w http.ResponseWriter,
+	r *http.Request,
+	clientName string,
+) {
 	switch r.Method {
 	case "PUT":
-		HandlePUT(config, w, r, clientName)
+		HandlePUT(log, config, w, r, clientName)
 	case "GET":
-		HandleGET(config, w, r, clientName)
+		HandleGET(log, config, w, r, clientName)
 	default:
-		log.Printf("Unknown method\n")
+		log("Unknown method\n")
 	}
 }
 
