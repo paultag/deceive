@@ -127,7 +127,7 @@ func HandleUpload(
 	case "GET":
 		HandleGET(log, config, w, r, clientName)
 	default:
-		log("Unknown method\n")
+		log("Unknown method")
 		writeError(w, "Method not supported", 400)
 	}
 }
